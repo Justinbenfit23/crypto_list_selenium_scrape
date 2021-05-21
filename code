@@ -1,0 +1,59 @@
+# I got the first function to execute succesfully and pull the data. The challenge is that this website is rendered with javascript so I have to use chromedriver and selenium to active
+# a browser that activates the javascript so I can scrape it. The tricky part is trying to get the "get_next_page" function to click the next button on the website to populate then scrape page 2. Eventually I want to put this 
+# in a while loop so it keeps clicking to the next page, scraping the new data and appending it to the master list etc. 
+
+import selenium
+from selenium.webdriver.chrome.options import Options
+from selenium import webdriver
+from bs4 import *
+import time
+import pandas as pd
+import pickle
+import html5lib
+from requests_html import HTMLSession
+
+options = Options()
+options.add_argument('--headless')
+options.add_argument('--disable-gpu')
+chrome_driver_path = '/Users/Justin/Desktop/Python/chromedriver'
+driver = webdriver.Chrome(executable_path=chrome_driver_path)
+url = "https://cryptoli.st/lists/fixed-supply"
+driver.get(url)
+time.sleep(3)
+page = driver.page_source
+# driver.quit()
+
+
+def get_next_page(url):
+
+    if not driver.find_element_by_xpath('//*[@id="DataTables_Table_0_next"]/a'):
+        driver.find_elements_by_xpath(
+            '//*[@id="DataTables_Table_0_next"]/a').click()
+        global soup, container
+        soup = BeautifulSoup(page, 'html5lib')
+        container = soup.find_all('div', attrs={
+            'class': 'dataTables_scrollBody'})
+        df = pd.read_html(str(container))
+        dfs = df[0]
+        page_next_data = dfs[['#', 'Name', 'Symbol', 'Max Supply', 'Summary', 'Price', 'Market Cap',
+                              '24h Volume', '1h %', '24h %', '7d %', 'Circulation', 'Total Supply', 'Consensus Method']]
+        return master_list.append(page_next_data)
+
+    else:
+        return
+
+
+def get_data(url, get_next_page):
+    global soup, container
+    soup = BeautifulSoup(page, 'html5lib')
+    container = soup.find_all('div', attrs={
+        'class': 'dataTables_scrollBody'})
+    df = pd.read_html(str(container))
+    dfs = df[0]
+    page_one_data = dfs[['#', 'Name', 'Symbol', 'Max Supply', 'Summary', 'Price', 'Market Cap',
+                         '24h Volume', '1h %', '24h %', '7d %', 'Circulation', 'Total Supply', 'Consensus Method']]
+    return page_one_data
+    get_next_page(url)
+
+
+master_list = get_data(url)
